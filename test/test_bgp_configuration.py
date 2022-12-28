@@ -12,7 +12,6 @@ def test_external_peers_no_empty_import_policies(different_as):
     no_import_policy = different_as["Import_Policy"] == "[]"
     df = different_as[no_import_policy]
     offending_peers = df[["Node", "Remote_IP"]]
-    tabulate(df, headers="keys", tablefmt="psql")
     assert df.empty, f"eBGP sessions without import policy:\n{offending_peers}"
 
 

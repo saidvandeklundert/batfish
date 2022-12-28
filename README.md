@@ -15,7 +15,8 @@ docker pull batfish/allinone
 docker run --name batfish -v batfish-data:/data -p 8888:8888 -p 9997:9997 -p 9996:9996 batfish/allinone
 ```
 
-Setup the Python stuff:
+Install the relevant Python dependencies :
+
 ```
 python -m pipenv check
 python -m pipenv update
@@ -23,7 +24,8 @@ python -m pipenv shell
 # 'exit' to leave the pipenv shell
 ```
 
-Run all tests:
+Run all tests located in the `test` directory:
+
 ```
 python -m pytest
 ```
