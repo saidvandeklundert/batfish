@@ -1,6 +1,7 @@
 """
 python -m pytest test/test_issues_and_unreferenced.py 
 """
+from pytest import mark
 
 
 def test_undefined(bf):
@@ -13,6 +14,7 @@ def test_undefined(bf):
     assert df.empty is True
 
 
+@mark.batfish_issues
 def test_issues(bf):
     """
     Test for the absence of issues detected by

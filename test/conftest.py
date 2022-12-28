@@ -6,12 +6,13 @@ from pybatfish.datamodel import *
 from pybatfish.datamodel.answer import *
 from pybatfish.datamodel.flow import *
 
+
 SNAPSHOT_DIR = "snapshots/"
 SNAP_SHOT_NAME = "example_snap_new"
 SNAP_SHOT_NETWORK_NAME = "example_dc"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def bf() -> pybatfish.client.session.Session:
     """returns a BatFish session for reuse throughtout the tests."""
     bf = Session(host="localhost")
@@ -21,19 +22,19 @@ def bf() -> pybatfish.client.session.Session:
     return bf
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def bgp_process_configuration(bf) -> pd.DataFrame:
     df = bf.q.bgpProcessConfiguration().answer().frame()
     return df
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def bgp_peer_configuration(bf) -> pd.DataFrame:
     df = bf.q.bgpPeerConfiguration().answer().frame()
     return df
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def different_as(bgp_peer_configuration):
     """Dataframe with peers residing in different autonomous systems."""
     diff_as = bgp_peer_configuration["Local_AS"] != bgp_peer_configuration["Remote_AS"]
