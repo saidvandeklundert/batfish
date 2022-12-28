@@ -2,8 +2,25 @@
 
 Example pipeline for Batfish
 
+![Batfish](/img/batfish.png)
 
-## Quickstart
+## Intro to Batfish
+
+..
+
+## Intro to Pandas
+
+..
+
+## Interesting pytest features
+
+..
+
+## Putting together the testing pipeline
+
+..
+
+## Quickstart: Batfish up and running in 5 minutes
 
 Start the container with the batfish service:
 
@@ -20,10 +37,9 @@ python -m pipenv shell
 # 'exit' to leave the pipenv shell
 ```
 
-To run the tests:
+Run all tests:
 ```
-python -m pytest .
-python -m pytest . -W ignore::DeprecationWarning
+python -m pytest
 ```
 
 
