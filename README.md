@@ -4,21 +4,7 @@ Example pipeline for Batfish
 
 ![Batfish](/img/batfish.png)
 
-## Intro to Batfish
-
-..
-
-## Intro to Pandas
-
-..
-
-## Interesting pytest features
-
-..
-
-## Putting together the testing pipeline
-
-..
+More on Batfish, Pandas and pytest will follow soon.
 
 ## Quickstart: Batfish up and running in 5 minutes
 
