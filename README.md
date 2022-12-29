@@ -57,7 +57,9 @@ bf.set_snapshot(SNAP_SHOT_NAME)
 
 ## Pandas
 
-The Pandas Dataframe:
+Many blogs and books have been written about Pandas and there is a lot to learn and discover about the framework. However, in the context of Batfish, there is a lot you can get done knowing just some of the basics. First, I'll discuss the most important datastructure in Pandas and after that, I will share some recipes that I turned to most often.
+
+The datastructure that is used to deliver all the goodness that Batfish has to offer is the Pandas Dataframe.
 
 ![Pandas Dataframe](/img/pandas_dataframe.png)
 
@@ -65,6 +67,13 @@ The Pandas Dataframe:
 
 
 `Series`: a one-dimensional labeled array capable of holding any data stype. The axis labels are referred to as the `index`. The `Series` represent a single column in a dataframe.
+
+
+### Filtering and selecting values of interest
+
+### Iterating the Pandas dataframe
+
+### Converting the Pandas Dataframe to another datastructure
 
 
 ## Quickstart: Batfish up and running in 5 minutes
@@ -105,6 +114,8 @@ python -m pytest
 [Pandas tutorials](http://pandas.pydata.org/docs/getting_started/intro_tutorials/)
 
 
+https://github.com/saidvandeklundert/batfish
+
 ## Notes:
 
-This example pipeline uses configurations found in the Batfish repo, [here](https://github.com/batfish/batfish/tree/master/networks). Certain snippets of config were added to trigger some tests to pass/fail.
+This example blog uses configurations found in the Batfish repo, [here](https://github.com/batfish/batfish/tree/master/networks). I am using them with permission. Certain snippets of config were added to trigger some tests to pass/fail.
