@@ -31,7 +31,11 @@ python -m pytest
 ```
 
 
+## Interesting links:
 
+Datamodels in the pybatfish repo: https://github.com/batfish/pybatfish/blob/master/pybatfish/datamodel
+
+Asserts source code: https://github.com/batfish/pybatfish/blob/master/pybatfish/client/asserts.py
 
 ## Notes:
 
