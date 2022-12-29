@@ -1,10 +1,71 @@
-# Batfish testing pipeline
+# Testing network configuration using Batfish, Pandas and pytest
 
-Example pipeline for Batfish
+Examples on how to test and validate network configurations leveraging Batfish, Pandas and pytest.
 
 ![Batfish](/img/batfish.png)
 
 More on Batfish, Pandas and pytest will follow soon.
+
+## What is Batfish
+
+Batfish according to [Batfish](https://github.com/batfish/batfish):
+```
+Batfish is a network validation tool that provides correctness guarantees for security, reliability, and compliance by analyzing the configuration of network devices. It builds complete models of network behavior from device configurations and finds violations of network policies (built-in, user-defined, and best-practices).
+```
+
+The two main components to Batfish are the following:
+- Batfish service: the software that analyzes the configurations
+- Batfish client: the `pybatfish` Python client that allows users to interact with the Batfish service.
+
+Typically, I think, the Batfish service is run in a container. The Batfish client feeds the service with all the required input data: 
+
+![Batfish overview](/img/batfish_client_service_parse.png)
+
+As shown above, the Batfish client is used to upload all relevant configurations. This is significant because it allows Batfish to operate without network device access, making it easy to integrate into the suite of automation tools in place and allowing it to operate on configurations prior to their actual deployment.
+
+After recieving the configurations, the service runs parses the data and produces the models. When this is completed, the client can start asking the service questions in order to retrieve a variety datamodels.
+
+The first thing of interest is the `initIssues` questions that Batfish offers. This 'out of the box' questions can detect several configuration issues for you. The second thing worth noting is `undefinedReferences`, which will notify you in case one of your configuration constructs (like a route-map) references something that does not exist (an access-list for instance).
+
+However, the real treasure trove is the models that the Batfish service builds for you based on the configurations you provide. You can access these models through a variety of questions. The methods that allow you to ask these questions can be made to return a Pandas dataframe. These models can be put to good use in different scenario's:
+- making assertions during CI to verify the state of the network configuration prior to deploying the configurations
+- feeding the data models to other (micro-)services to enhance their insights into the network. For instance:
+  - have the monitoring system better understand what constructs exist and should be monitored (BGP sessions for instance)
+  - feed the models into a service that exposes the models for other applications to consume
+  - etc.
+- making assertions against different snapshots for pre- and post-change validations
+
+## Your first snapshot:
+
+```python
+from pybatfish.client.session import Session
+from pybatfish.datamodel import *
+from pybatfish.datamodel.answer import *
+from pybatfish.datamodel.flow import *
+
+SNAPSHOT_DIR = "snapshots/"
+SNAP_SHOT_NAME = "example_snap_new"
+SNAP_SHOT_NETWORK_NAME = "example_dc"
+
+
+bf = Session(host="localhost")
+bf.set_network(SNAP_SHOT_NETWORK_NAME)
+bf.init_snapshot(SNAPSHOT_DIR, name=SNAP_SHOT_NAME, overwrite=True)
+bf.set_snapshot(SNAP_SHOT_NAME)
+```
+
+
+## Pandas
+
+The Pandas Dataframe:
+
+![Pandas Dataframe](/img/pandas_dataframe.png)
+
+`Dataframe`: 2-dimensional data structure that can store different types of data. The Dataframe consists of columns and rows. Every column in a DataFrame is a `Series`.
+
+
+`Series`: a one-dimensional labeled array capable of holding any data stype. The axis labels are referred to as the `index`. The `Series` represent a single column in a dataframe.
+
 
 ## Quickstart: Batfish up and running in 5 minutes
 
@@ -31,11 +92,18 @@ python -m pytest
 ```
 
 
+
+
 ## Interesting links:
 
-Datamodels in the pybatfish repo: https://github.com/batfish/pybatfish/blob/master/pybatfish/datamodel
+[Batfish documentation](https://batfish.readthedocs.io/en/latest/)
+[Batfish questions](https://batfish.readthedocs.io/en/latest/questions.html)
+[Datamodels in the pybatfish repo](https://github.com/batfish/pybatfish/blob/master/pybatfish/datamodel)
 
-Asserts source code: https://github.com/batfish/pybatfish/blob/master/pybatfish/client/asserts.py
+[Batfish asserts source code](https://github.com/batfish/pybatfish/blob/master/pybatfish/client/asserts.py)
+
+[Pandas tutorials](http://pandas.pydata.org/docs/getting_started/intro_tutorials/)
+
 
 ## Notes:
 
