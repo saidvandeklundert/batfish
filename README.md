@@ -69,6 +69,26 @@ The datastructure that is used to deliver all the goodness that Batfish has to o
 `Series`: a one-dimensional labeled array capable of holding any data stype. The axis labels are referred to as the `index`. The `Series` represent a single column in a dataframe.
 
 
+###
+
+
+df.columns  # check column names
+df.iloc[0]  # integer-location based indexing for selection by position
+df.head(6)  # first 6 rows of the frame
+df.tail(6)  # last 6 rows of the frame
+
+```
+In [17]: df.tail(6)
+Out[17]: 
+          Node      VRF Local_AS    Local_IP Local_Interface Confederation  ... Cluster_ID Peer_Group   Import_Policy   Export_Policy Send_Community Is_Passive     
+31    as2dist1  default        2     2.1.3.1            None          None  ...       None        as2              []              []           True      False     
+32    as2dist2  default        2     2.1.3.2            None          None  ...       None        as2              []              []           True      False     
+33    as2dist2  default        2     2.1.3.2            None          None  ...       None        as2              []              []           True      False     
+34  as1border2  default        1  10.14.22.1            None          None  ...       None        as4  ['as4_to_as1']  ['as1_to_as4']          False      False     
+35    as1core1  default        1    1.10.1.1            None          None  ...   1.10.1.1        as1              []              []           True      False     
+36  as1border2  default        1     1.2.2.2            None          None  ...       None        as1              []              []           True      False     
+```
+
 ### Filtering and selecting values of interest
 
 ### Iterating the Pandas dataframe
