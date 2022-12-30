@@ -72,22 +72,38 @@ The datastructure that is used to deliver all the goodness that Batfish has to o
 ###
 
 
-df.columns  # check column names
-df.iloc[0]  # integer-location based indexing for selection by position
-df.head(6)  # first 6 rows of the frame
-df.tail(6)  # last 6 rows of the frame
+df.columns    # check column names
+df.iloc[0]    # integer-location based indexing for selection by position
+df.iloc[0:3]  # slice of a DataFrame
 
+df.head(6)    # first 6 rows of the frame
+df.tail(6)    # last 6 rows of the frame
+df["Node"]    # select 1 row / Series (returns a Series)
+df[["Node","Local_IP","Remote_IP"]]    # select multiple rows / Series (returns a DataFrame)
+df.iloc[0:3,[1,2]]  # slice of a DataFrame, selecting columns 1 and 2
+df.loc[0:10,["Node","Local_IP","Remote_IP"]]  # slice of the DataFrame selecting columns by name
+
+df.to_csv("data.csv")                 # store data as CSV
+from_csv = pd.read_csv("data.csv")    # read DataFrame from CSV
+
+Note about iloc and loc: with iloc, the row and the columns are selected using an integer to specify the index number of the row/column. With loc, you supply the label of the row/column name. In case the rows are labeled with integers, as is the case with Batfish models, you can select the rows using integers and the columns using their name. Generally, this is an easier approach.
 ```
-In [17]: df.tail(6)
-Out[17]: 
-          Node      VRF Local_AS    Local_IP Local_Interface Confederation  ... Cluster_ID Peer_Group   Import_Policy   Export_Policy Send_Community Is_Passive     
-31    as2dist1  default        2     2.1.3.1            None          None  ...       None        as2              []              []           True      False     
-32    as2dist2  default        2     2.1.3.2            None          None  ...       None        as2              []              []           True      False     
-33    as2dist2  default        2     2.1.3.2            None          None  ...       None        as2              []              []           True      False     
-34  as1border2  default        1  10.14.22.1            None          None  ...       None        as4  ['as4_to_as1']  ['as1_to_as4']          False      False     
-35    as1core1  default        1    1.10.1.1            None          None  ...   1.10.1.1        as1              []              []           True      False     
-36  as1border2  default        1     1.2.2.2            None          None  ...       None        as1              []              []           True      False     
+In [24]: df[["Node","Local_IP","Remote_IP"]].head(10)
+Out[24]: 
+         Node    Local_IP   Remote_IP
+0    as3core1    3.10.1.1     3.1.1.1
+1  as2border1  10.12.11.2  10.12.11.1
+2    as2core2     2.1.2.2     2.1.3.2
+3  as3border1     3.1.1.1    3.10.1.1
+4    as2core1     2.1.2.1     2.1.3.2
+5    as2core2     2.1.2.2     2.1.1.2
+6    as2core2     2.1.2.2     2.1.3.1
+7    as2core1     2.1.2.1     2.1.1.2
+8    as2core1     2.1.2.1     2.1.3.1
+9    as2core2     2.1.2.2     2.1.1.1
 ```
+
+
 
 ### Filtering and selecting values of interest
 
