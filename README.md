@@ -1,29 +1,37 @@
 # Testing network configuration using Batfish, Pandas and pytest
 
-Examples on how to test and validate network configurations leveraging Batfish, Pandas and pytest.
+Recently, I started looking into testing and validating network configurations leveraging Batfish, Pandas and pytest. Doing something with Batfish has been on my to-do list for quite a while. After playing with it, I can say it is a real pitty I did not start using this tool earler. 
 
 ![Batfish](/img/batfish.png)
 
-More on Batfish, Pandas and pytest will follow soon.
+This article aims to give people interested in using Batfish as part of their CI a running start by explaining the basics of Batfish and getting it up and running. After this, I will go over bit of Pandas so you can work with the data that is produced by Batfish and I will finish up writing some unit tests using pytest. There will be no mention of any CI tool or deployment method.
 
-## What is Batfish
+## Batfish overview
 
-Batfish according to [Batfish](https://github.com/batfish/batfish):
-```
-Batfish is a network validation tool that provides correctness guarantees for security, reliability, and compliance by analyzing the configuration of network devices. It builds complete models of network behavior from device configurations and finds violations of network policies (built-in, user-defined, and best-practices).
-```
+
+The 'why' Batfish according to [Batfish](https://github.com/batfish/batfish):
+
+_Batfish is a network validation tool that provides correctness guarantees for security, reliability, and compliance by analyzing the configuration of network devices. It builds complete models of network behavior from device configurations and finds violations of network policies (built-in, user-defined, and best-practices)._
+
+The idea is to analyze the configurations _before_ deploying them. So after your automation generates configuration files or changes, you can use Batfish as a mechanism to provide additional 'correctness guarantees'. In addition to this, there are also other ways in which Batfish can be helpful, more on that later.
+
+### Batfish components 
 
 The two main components to Batfish are the following:
 - Batfish service: the software that analyzes the configurations
 - Batfish client: the `pybatfish` Python client that allows users to interact with the Batfish service.
 
-Typically, I think, the Batfish service is run in a container. The Batfish client feeds the service with all the required input data: 
+Typically, the Batfish service is run in a container and the Batfish client feeds the service with all the required input data: 
 
 ![Batfish overview](/img/batfish_client_service_parse.png)
 
-As shown above, the Batfish client is used to upload all relevant configurations. This is significant because it allows Batfish to operate without network device access, making it easy to integrate into the suite of automation tools in place and allowing it to operate on configurations prior to their actual deployment.
+The Batfish client is used to upload all relevant configurations. This allows Batfish to operate without network device access, making it easy to integrate into the suite of automation tools in place and allowing it to operate on configurations prior to their actual deployment.
 
-After recieving the configurations, the service runs parses the data and produces the models. When this is completed, the client can start asking the service questions in order to retrieve a variety datamodels.
+After recieving the configurations, the service parses the data that was supplied (the configurations) and produces the models. When this is completed, users can start using the client to ask the service 'questions'. When the client is used to ask a question, the service will generate and return an answer that ends up as a Pandas DataFrame for the user to work with.
+
+### Batfish questions
+
+Some questions will return issues found in the configurations and other questions will return a variety of datamodels that describe the network.
 
 The first thing of interest is the `initIssues` questions that Batfish offers. These 'out of the box' questions can detect several configuration issues for you. The second thing worth noting is `undefinedReferences`, which will notify you in case one of your configuration constructs (like a route-map) references something that does not exist (an access-list for instance).
 
@@ -35,7 +43,26 @@ However, the real treasure trove is the models that the Batfish service builds f
   - etc.
 - making assertions against different snapshots for pre- and post-change validations
 
-## Your first snapshot:
+### Your first snapshot:
+
+Start the container with the batfish service:
+
+```
+docker pull batfish/allinone
+docker run --name batfish -v batfish-data:/data -p 8888:8888 -p 9997:9997 -p 9996:9996 batfish/allinone
+```
+
+Install the relevant Python dependencies (using [pipenv](https://pypi.org/project/pipenv/) in this example):
+
+```
+git clone https://github.com/saidvandeklundert/batfish.git
+cd batfish
+python -m pipenv check
+python -m pipenv update
+python -m pipenv shell
+```
+
+We have the Batfish service running and we have the proper client software installed. From the same directory, we can start an `ipython` session and run the following:
 
 ```python
 from pybatfish.client.session import Session
@@ -54,6 +81,17 @@ bf.init_snapshot(SNAPSHOT_DIR, name=SNAP_SHOT_NAME, overwrite=True)
 bf.set_snapshot(SNAP_SHOT_NAME)
 ```
 
+The `bf` variable is a pybatfish client session that is used for all further interactions with the service. To see some data appear on screen, issue the following:
+
+```
+bf.q.initIssues().answer().frame()
+bf.q.undefinedReferences().answer().frame()
+bf.q.interfaceProperties().answer().frame()
+```
+
+This will inform you of any issues detected by Batfish, any undefined references in you configuration and it will give you data that describes the interfaces in your network.
+
+The data is delivered in a Pandas DataFrame.
 
 ## Pandas
 
@@ -98,7 +136,7 @@ Note about iloc and loc: with iloc, the row and the columns are selected using a
 
 ### Filtering and selecting values of interest
 
-To use the data Batfish has on offer effectively, you need to be able to filter it to find the things that are relevant to your network. Pandas has put a lot of developer ergonomics in place to sift through and filter data. Here are some examples I ran on a dataframe obtained using `df = bf.q.interfaceProperties().answer().frame()`:
+To use the data Batfish has on offer effectively, you need to be able to filter it to find the things that are relevant to your network. Pandas has put a lot of developer ergonomics in place to sift through and filter data. All of these examples were run against the dataframe obtained using `df = bf.q.interfaceProperties().answer().frame()`.
 
 ```
 # display rows where the MTU is 1500:
@@ -193,6 +231,34 @@ for idx, row in df.iterrows():
   print(row["MTU"])
 ```
 
+## Pytest
+
+Pytest according to pytest:
+
+_The pytest framework makes it easy to write small, readable tests, and can scale to support complex functional testing for applications and libraries._
+
+Working with Pytest is a joy to me due to the simplicity of the framework and the fact that there are a lot of features in pytest that can make your life easy. There is a fantastic book on the framework which I can really recommend as it will guide you through the most usefull and important features of the framework:
+
+![Pytest book](/img/pytest_book.png)
+
+
+In the context of using Batfish to test the network, I am going to keep it simple and straightforward. I will mainly let pytest drive the execution of the tests making use of a small amount of features pytest has on offer. 
+
+First, I will show you how to run the tests, then I will discuss fixtures and after that, I will cover some example tests.
+
+### Running the tests
+
+The repo that comes with this article has a directory where all the tests are located. Additionally, there is a `pytest.ini` file containing the pytest configuration. To run all the tests, simply run `pytest` or `python -m pytest` from the top level directory of the repository.
+
+Pytest will then:
+- read the configuration options
+- look for tests in the test directory
+- identify all test functions (functions prefixed with `test_` in their name)
+- execute all the tests
+- report the results of the tests
+
+
+### Setting up a fixture
 
 ## Quickstart: Batfish up and running in 5 minutes
 
@@ -231,6 +297,8 @@ python -m pytest
 [Batfish asserts source code](https://github.com/batfish/pybatfish/blob/master/pybatfish/client/asserts.py)
 
 [Pandas tutorials](http://pandas.pydata.org/docs/getting_started/intro_tutorials/)
+
+[Python Testing with pytest](https://a.co/d/1B1Ryh5)
 
 
 https://github.com/saidvandeklundert/batfish
