@@ -29,7 +29,8 @@ def test_minimum_mtu_core_routers(interface_properties):
 def test_unused_are_shut(interface_properties):
     """
     Verify all interfaces with the 'UNUSED' description
-    are administratively shut."""
+    are administratively shut.
+    """
     unused = interface_properties["Description"].str.contains("UNUSED", na=False)
     admin_up = interface_properties["Admin_Up"] == True
     unused_and_up = interface_properties[unused & admin_up]

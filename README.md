@@ -258,7 +258,97 @@ Pytest will then:
 - report the results of the tests
 
 
-### Setting up a fixture
+### Fixtures
+
+Pytest fixtures can be used to initialize resources that tests functions can use. In our case, (most) test functions will require a pybatfish session and a snapshot. Having every test function setup a pybatfish session with the Batfish service and run a snapshot would not make sense. What we do instead is write a function that returns a pybatfish Session. A session during one we already created a snapshot. 
+
+We put the fixture in a file called `conftest.py`. This way, pytest automatically picks up the fixture. Second, we decorate the function we want to serve as fixture with the pytest fixture decorator and specify that the fixture is to be used throughout the testing session. This way, it is set up only once and we can re-use it hundreds of times:
+
+```python
+import pytest
+
+import pybatfish
+from pybatfish.client.session import Session
+from pybatfish.datamodel import *
+from pybatfish.datamodel.answer import *
+from pybatfish.datamodel.flow import *
+
+
+SNAPSHOT_DIR = "snapshots/"
+SNAP_SHOT_NAME = "example_snap_new"
+SNAP_SHOT_NETWORK_NAME = "example_dc"
+
+
+@pytest.fixture(scope="session")
+def bf() -> pybatfish.client.session.Session:
+    """returns a BatFish session for reuse throughtout the tests."""
+    bf = Session(host="localhost")
+    bf.set_network(SNAP_SHOT_NETWORK_NAME)
+    bf.init_snapshot(SNAPSHOT_DIR, name=SNAP_SHOT_NAME, overwrite=True)
+    bf.set_snapshot(SNAP_SHOT_NAME)
+    return bf
+```
+
+Using the fixture is done by passing it as argument to a test function:
+```python
+def test_something(bf):
+    assert ...
+```
+
+Pytest collects all fixtures as soon as you run tests and you can, having created the fixture in `conftest.py`, reference it anywhere in your tests.
+
+Another thing that is nice to know is the fact that fixtures can also be used by other fixtures. Since we will be writing tests for interface properties as well as BGP sessions, we can use the previous fixtures to create new ones that return interface and BGP data. 
+
+```python
+@pytest.fixture(scope="session")
+def bgp_peer_configuration(bf) -> pd.DataFrame:
+    df = bf.q.bgpPeerConfiguration().answer().frame()
+    return df
+
+@pytest.fixture(scope="session")
+def interface_properties(bf) -> pd.DataFrame:
+    df = bf.q.interfaceProperties().answer().frame()
+    return df
+```
+
+Creating fixtures for resources that you use repeatedly not only speeds things up considerably, it also reduces the amount of clutter in your tests.
+
+### Examples tests
+
+Here are some sample tests that should give you a basic idea on how to go about creating tests that are relevant to your own network.
+
+#### Testing for issues and unreferenced configuration snippets.
+
+The `initIssues` question produces a DataFrame with an issue per row. Testing for this can be done like so:
+
+```python
+def test_issues(bf):
+    """
+    Test for the absence of issues detected by
+    the checks that ship with Batfish:
+
+    https://batfish.readthedocs.io/en/latest/notebooks/snapshot.html#Snapshot-Initialization-Issues
+    """
+    df = bf.q.initIssues().answer().frame()
+    assert df.empty is True
+```
+
+We pass in the fixture `bf` and then extract the desired DataFrame. We know that there are no issues in case the DataFrame is empty, so for that reason we use `assert df.empty is True`. 
+
+
+Next we use the `undefinedReferences` questions:
+
+```python
+def test_undefined(bf):
+    """
+    Test for the existence of references to undefined
+    configuration construtcts. For instance,
+    references to non-existant route-maps.
+    """
+    df = bf.q.undefinedReferences().answer().frame()
+    assert df.empty is True
+```
+
 
 ## Quickstart: Batfish up and running in 5 minutes
 
