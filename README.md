@@ -4,7 +4,7 @@ Recently, I started looking into testing and validating network configurations l
 
 ![Batfish](/img/batfish.png)
 
-This article aims to give people interested in using Batfish as part of their CI a running start by explaining the basics of Batfish and getting it up and running. After this, I will go over bit of Pandas so you can work with the data that is produced by Batfish and I will finish up writing some unit tests using pytest. There will be no mention of any CI tool or deployment method.
+This article aims to give people interested in using Batfish as part of their CI a running start by explaining the basics of Batfish and getting it up and running. After this, I will go over bit of Pandas so you can work with the data that is produced by Batfish and I will finish up writing some unit tests using pytest. This will not be specific to any CI tool or configuration deployment method.
 
 ## Batfish overview
 
@@ -21,29 +21,26 @@ The two main components to Batfish are the following:
 - Batfish service: the software that analyzes the configurations
 - Batfish client: the `pybatfish` Python client that allows users to interact with the Batfish service.
 
-Typically, the Batfish service is run in a container and the Batfish client feeds the service with all the required input data: 
+The Batfish service can be run in a container and the Batfish client feeds the service with all the required input data: 
 
 ![Batfish overview](/img/batfish_client_service_parse.png)
 
-The Batfish client is used to upload all relevant configurations. This allows Batfish to operate without network device access, making it easy to integrate into the suite of automation tools in place and allowing it to operate on configurations prior to their actual deployment.
+Not requiring device access makes it easy to integrate Batfish into the suite of automation tools in place. Also, how can you work with configurations prior to their actual deployment if you need device access?
 
-After recieving the configurations, the service parses the data that was supplied (the configurations) and produces the models. When this is completed, users can start using the client to ask the service 'questions'. When the client is used to ask a question, the service will generate and return an answer that ends up as a Pandas DataFrame for the user to work with.
+After recieving the configurations, the Batfish service parses it and produces the structured and vendor agnostic models. When this is completed, users can start using the client to ask the service 'questions'. When the client is used to ask a question, the service will generate and return an answer that ends up as a Pandas DataFrame for the user to work with:
 
-### Batfish questions
+![Batfish](/img/pybatfishclientandserverexchange.png)
 
-Some questions will return issues found in the configurations and other questions will return a variety of datamodels that describe the network.
-
-The first thing of interest is the `initIssues` questions that Batfish offers. These 'out of the box' questions can detect several configuration issues for you. The second thing worth noting is `undefinedReferences`, which will notify you in case one of your configuration constructs (like a route-map) references something that does not exist (an access-list for instance).
-
-However, the real treasure trove is the models that the Batfish service builds for you based on the configurations you provide. You can access these models through a variety of questions. The methods that allow you to ask these questions can be made to return a Pandas dataframe. These models can be put to good use in different scenario's:
-- making assertions during CI to verify the state of the network configuration prior to deploying the configurations
-- feeding the data models to other (micro-)services to enhance their insights into the network. For instance:
+These datamodels that the Batfish service builds for you are the real treasure trove. These models can be put to good use all sorts of scenario's:
+- verify the state of the network configuration during CI and prior to any actual deployment
+- feeding the data models to other (micro-)services to enhance their insights into the network, e.g:
   - have the monitoring system better understand what constructs exist and should be monitored (BGP sessions for instance)
   - feed the models into a service that exposes the models for other applications to consume
   - etc.
 - making assertions against different snapshots for pre- and post-change validations
 
-### Your first snapshot:
+
+### Creating a snapshot and asking some questions:
 
 Start the container with the batfish service:
 
@@ -81,17 +78,23 @@ bf.init_snapshot(SNAPSHOT_DIR, name=SNAP_SHOT_NAME, overwrite=True)
 bf.set_snapshot(SNAP_SHOT_NAME)
 ```
 
-The `bf` variable is a pybatfish client session that is used for all further interactions with the service. To see some data appear on screen, issue the following:
+The `bf` variable is a pybatfish client session that is used for all further interactions with the service.
 
-```
+The first thing of interest is the `initIssues` question that Batfish offers. This 'out of the box' question can detect several configuration issues for you. The second thing worth noting is the `undefinedReferences`, which can tell you if one of your configuration constructs (like a route-map) references something that does not exist (an access-list for instance).
+
+
+```python
 bf.q.initIssues().answer().frame()
 bf.q.undefinedReferences().answer().frame()
+```
+
+We can also look at [Batfish questions](https://batfish.readthedocs.io/en/latest/questions.html) to understand what the other options are. For example, here is how we can retrieve the DataFrame for interfaces:
+
+```python
 bf.q.interfaceProperties().answer().frame()
 ```
 
-This will inform you of any issues detected by Batfish, any undefined references in you configuration and it will give you data that describes the interfaces in your network.
-
-The data is delivered in a Pandas DataFrame.
+Calling `.frame()` on any of the answers that Batfish provides us with transforms the answertable into a Pandas DataFrame.
 
 ## Pandas
 
@@ -111,7 +114,7 @@ The datastructure that is used to deliver all the goodness that Batfish has to o
 
 The best way to get started with Pandas is by using the basic operations in REPL. Start `ipython` and grab a DataFrame using one of the Batfish questions, for instance `df = bf.q.interfaceProperties().answer().frame()` to work with interface data. After this, explore the dataset with the following:
 
-```
+```python
 df.columns    # check column names
 df.iloc[0]    # integer-location based indexing for selection by position
 df.iloc[0:3]  # slice of a DataFrame
@@ -132,13 +135,11 @@ from_csv = pd.read_csv("data.csv")    # read DataFrame from CSV
 Note about iloc and loc: with iloc, the row and the columns are selected using an integer to specify the index number of the row/column. With loc, you supply the label of the row/column name. In case the rows are labeled with integers, as is the case with Batfish models, you can select the rows using integers and the columns using their name. Generally, when working with Pybatfish, this is an easier approach.
 
 
-
-
 ### Filtering and selecting values of interest
 
 To use the data Batfish has on offer effectively, you need to be able to filter it to find the things that are relevant to your network. Pandas has put a lot of developer ergonomics in place to sift through and filter data. All of these examples were run against the dataframe obtained using `df = bf.q.interfaceProperties().answer().frame()`.
 
-```
+```python
 # display rows where the MTU is 1500:
 df[df["MTU"] == 1500]
 
@@ -203,7 +204,7 @@ df[
 ```
 
 We are free to add additional logic to the Lambda and add criteria to filter based on other columns as well:
-```
+```python
 df[
     df.apply(
         lambda row: "core" in row["Interface"].hostname
@@ -224,7 +225,7 @@ df[
 
 Lastly, for certain scenario's, knowing you can iterate the DataFrame might also come in handy:
 
-```
+```python
 for idx, row in df.iterrows():
   print(idx)
   print(row["Interface"])
@@ -290,6 +291,7 @@ def bf() -> pybatfish.client.session.Session:
 ```
 
 Using the fixture is done by passing it as argument to a test function:
+
 ```python
 def test_something(bf):
     assert ...
@@ -365,7 +367,6 @@ Install the relevant Python dependencies :
 python -m pipenv check
 python -m pipenv update
 python -m pipenv shell
-# 'exit' to leave the pipenv shell
 ```
 
 Run all tests located in the `test` directory:
