@@ -21,9 +21,11 @@ def test_for_deviating_mtu(interface_properties):
 
 
 def test_minimum_mtu_core_routers(interface_properties):
+    """Verify that nodes with 'core' in the hostnames are
+    deployed with a minimum MTU of 9000."""
     for _, row in interface_properties.iterrows():
         if "core" in row["Interface"].hostname:
-            assert row["MTU"] > 7000
+            assert row["MTU"] > 9000
 
 
 def test_unused_are_shut(interface_properties):

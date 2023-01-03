@@ -6,8 +6,8 @@ python -m pytest test/test_issues_and_unreferenced.py
 def test_undefined(bf):
     """
     Test for the existence of references to undefined
-    configuration construtcts. For instance,
-    references to non-existant route-maps.
+    configuration constructs. For instance,
+    references to non-existent route-maps.
     """
     df = bf.q.undefinedReferences().answer().frame()
     assert df.empty is True

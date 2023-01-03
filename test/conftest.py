@@ -37,7 +37,9 @@ def bgp_peer_configuration(bf) -> pd.DataFrame:
 @pytest.fixture(scope="session")
 def different_as(bgp_peer_configuration):
     """Dataframe with peers residing in different autonomous systems."""
-    diff_as = bgp_peer_configuration["Local_AS"] != bgp_peer_configuration["Remote_AS"]
+    diff_as = bgp_peer_configuration["Local_AS"] != bgp_peer_configuration[
+        "Remote_AS"
+    ].astype(int)
     return bgp_peer_configuration[diff_as]
 
 
@@ -48,6 +50,17 @@ def node_properties(bf) -> pd.DataFrame:
 
 
 @pytest.fixture(scope="session")
+def all_nodes(node_properties):
+    return list(node_properties["Node"])
+
+
+@pytest.fixture(scope="session")
 def interface_properties(bf) -> pd.DataFrame:
     df = bf.q.interfaceProperties().answer().frame()
+    return df
+
+
+@pytest.fixture(scope="session")
+def named_structures(bf) -> pd.DataFrame:
+    df = bf.q.namedStructures().answer().frame()
     return df
