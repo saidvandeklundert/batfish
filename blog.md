@@ -4,7 +4,7 @@ Recently, I started looking into testing and validating network configurations l
 
 ![Batfish](/img/batfish.png)
 
-This article aims to give people interested in using Batfish as part of their CI a running start by explaining the basics of Batfish and getting it up and running. After this, I will go over bit of Pandas so you can work with the data that is produced by Batfish and I will finish up writing some unit tests using pytest. This will not be specific to any CI tool or configuration deployment method.
+This article aims to give people interested in using Batfish as part of their CI a running start by explaining the basics of Batfish and how it can be leveraged during CI. After this, I will go over bit of Pandas so you can work with the data that is produced by Batfish and I will finish up writing some unit tests using pytest. 
 
 ## Batfish overview
 
@@ -13,19 +13,23 @@ The 'why' Batfish according to [Batfish](https://github.com/batfish/batfish):
 
 _Batfish is a network validation tool that provides correctness guarantees for security, reliability, and compliance by analyzing the configuration of network devices. It builds complete models of network behavior from device configurations and finds violations of network policies (built-in, user-defined, and best-practices)._
 
-The idea is to analyze the configurations _before_ deploying them. So after your automation generates configuration files or changes, you can use Batfish as a mechanism to provide additional 'correctness guarantees'. In addition to this, there are also other ways in which Batfish can be helpful, more on that later.
+The idea is to analyze the configurations _before_ deploying them. So after your automation generates configuration files or changes, you can use Batfish as a tool to provide additional 'correctness guarantees'. The areas in which Batfish can help are:
+- configuration audits, verifying things are configured properly
+- ACL and firewall analysis
+- routing and forwarding analysis
+- reachability analysis
 
 ### Batfish components 
 
 The two main components to Batfish are the following:
-- Batfish service: the software that analyzes the configurations
-- Batfish client: the `pybatfish` Python client that allows users to interact with the Batfish service.
+- __Batfish service__: the software that analyzes the configurations
+- __Batfish client__: the `pybatfish` Python client that allows users to interact with the Batfish service.
 
 The Batfish service can be run in a container and the Batfish client feeds the service with all the required input data: 
 
 ![Batfish overview](/img/batfish_client_service_parse.png)
 
-Not requiring device access makes it easy to integrate Batfish into the suite of automation tools in place. Also, how can you work with configurations prior to their actual deployment if you need device access?
+Not requiring device access makes it easy to integrate Batfish into the suite of automation tools in place. Makes sense right, I mean how can you work with configurations prior to their actual deployment if you need device access?
 
 After receiving the configurations, the Batfish service parses it and produces the structured and vendor agnostic models. When this is completed, users can start using the client to ask the service 'questions'. When the client is used to ask a question, the service will generate and return an answer that ends up as a Pandas DataFrame for the user to work with:
 
@@ -36,7 +40,6 @@ These data models that the Batfish service builds for you are the real treasure 
 - feeding the data models to other (micro-)services to enhance their insights into the network, e.g.:
   - have the monitoring system better understand what constructs exist and should be monitored (BGP sessions for instance)
   - feed the models into a service that exposes the models for other applications to consume
-  - etc.
 - making assertions against different snapshots for pre- and post-change validations
 
 
