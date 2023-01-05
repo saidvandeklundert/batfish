@@ -13,7 +13,7 @@ The 'why' Batfish according to [Batfish](https://github.com/batfish/batfish):
 
 _Batfish is a network validation tool that provides correctness guarantees for security, reliability, and compliance by analyzing the configuration of network devices. It builds complete models of network behavior from device configurations and finds violations of network policies (built-in, user-defined, and best-practices)._
 
-The idea is to analyze the configurations _before_ deploying them. So after your automation generates configuration files or changes, you can use Batfish as a tool to provide additional 'correctness guarantees'. The areas in which Batfish can help are:
+The idea is to analyze the configurations _before_ deploying them. So your configuration files or changes are created, you can use Batfish as a tool to provide additional 'correctness guarantees'. The areas in which Batfish can help are:
 - configuration audits, verifying things are configured properly
 - ACL and firewall analysis
 - routing and forwarding analysis
@@ -21,7 +21,7 @@ The idea is to analyze the configurations _before_ deploying them. So after your
 
 ### Batfish components 
 
-The two main components to Batfish are the following:
+There are two main components to Batfish:
 - __Batfish service__: the software that analyzes the configurations
 - __Batfish client__: the `pybatfish` Python client that allows users to interact with the Batfish service.
 
@@ -29,13 +29,13 @@ The Batfish service can be run in a container and the Batfish client feeds the s
 
 ![Batfish overview](/img/batfish_client_service_parse.png)
 
-Not requiring device access makes it easy to integrate Batfish into the suite of automation tools in place. Makes sense right, I mean how can you work with configurations prior to their actual deployment if you need device access?
+The fact that Batfish does not require device access makes it particularly easy to integrate it into whatever automation tools already in place.
 
-After receiving the configurations, the Batfish service parses it and produces the structured and vendor agnostic models. When this is completed, users can start using the client to ask the service 'questions'. When the client is used to ask a question, the service will generate and return an answer that ends up as a Pandas DataFrame for the user to work with:
+After receiving the configurations, the Batfish service will parse them. It then produces structured and vendor agnostic data models to represent the configurations. When the service is done generating the models, you can start using the client to ask the service 'questions'. When the client is used to ask a question, the service will generate a repsonse in the form of a Pandas DataFrame:
 
 ![Batfish](/img/pybatfishclientandserverexchange.png)
 
-These data models that the Batfish service builds for you are the real treasure trove. These models can be put to good use all sorts of scenario's:
+These data models that the Batfish service builds for you are a real treasure trove. They can be put to good use for all sorts of scenario's:
 - verify the state of the network configuration during CI and prior to any actual deployment
 - feeding the data models to other (micro-)services to enhance their insights into the network, e.g.:
   - have the monitoring system better understand what constructs exist and should be monitored (BGP sessions for instance)
@@ -45,14 +45,14 @@ These data models that the Batfish service builds for you are the real treasure 
 
 ### Creating a snapshot and asking some questions:
 
-Start the container with the batfish service:
+Let create a snapshot and have a look at the data models. First, we start the container with the batfish service:
 
 ```
 docker pull batfish/allinone
 docker run --name batfish -v batfish-data:/data -p 8888:8888 -p 9997:9997 -p 9996:9996 batfish/allinone
 ```
 
-Install the relevant Python dependencies (using [pipenv](https://pypi.org/project/pipenv/) in this example):
+We also install the relevant Python dependencies (using [pipenv](https://pypi.org/project/pipenv/) in this example):
 
 ```
 git clone https://github.com/saidvandeklundert/batfish.git
@@ -62,7 +62,7 @@ python -m pipenv update
 python -m pipenv shell
 ```
 
-We have the Batfish service running and we have the proper client software installed. From the same directory, we can start an `ipython` session and run the following:
+From the same directory, we start an `ipython` session and then run the following:
 
 ```python
 from pybatfish.client.session import Session
