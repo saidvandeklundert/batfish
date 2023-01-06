@@ -55,16 +55,10 @@ bf.q.undefinedReferences().answer().frame()
 bf.q.interfaceProperties().answer().frame()
 ```
 
-## Interesting links:
-
-[Batfish documentation](https://batfish.readthedocs.io/en/latest/)
-[PyBatfish Jupyter notebook examples](https://github.com/batfish/pybatfish/tree/master/jupyter_notebooks)
-[Datamodels in the pybatfish repo](https://github.com/batfish/pybatfish/blob/master/pybatfish/datamodel)
-[Batfish questions](https://batfish.readthedocs.io/en/latest/questions.html)
-[Batfish asserts source code](https://github.com/batfish/pybatfish/blob/master/pybatfish/client/asserts.py)
-[Pandas tutorials](http://pandas.pydata.org/docs/getting_started/intro_tutorials/)
-[Python Testing with pytest](https://a.co/d/1B1Ryh5)
+Goes with [this](https://saidvandeklundert.net/2023-01-05-batfish/) post.
 
 ## Notes:
 
 This example uses configurations found in the Batfish repo, [here](https://github.com/batfish/batfish/tree/master/networks). I am using them with permission. Certain snippets of config were added to trigger some tests to pass/fail.
+
+The configurations were added simply to have _something_ to work on. The idea is that users replace the configurations with their own and then tweak the tests.
