@@ -4,7 +4,8 @@ Recently, I started looking into testing and validating network configurations l
 
 ![Batfish](/img/batfish.png)
 
-This article aims to give people interested in using Batfish as part of their CI a running start by explaining the basics of Batfish and how it can be leveraged during CI. After this, I will go over bit of Pandas so you can work with the data that is produced by Batfish and I will finish up writing some unit tests using pytest. 
+This article aims to explain the basics of Batfish and how it can be leveraged during CI. After this, I will cover a bit of Pandas so you can work with the data that is produced by Batfish and I will finish up writing some unit tests using pytest. 
+
 
 ## Batfish overview
 
@@ -124,15 +125,25 @@ df.iloc[0:3]  # slice of a DataFrame
 
 df.head(6)    # first 6 rows of the frame
 df.tail(6)    # last 6 rows of the frame
-df["Node"]    # select 1 row / Series (returns a Series)
-df[["Interface","Incoming_Filter_Name",]]    # select multiple rows / Series (returns a DataFrame)
-df.iloc[0:3,[1,2]]  # slice of a DataFrame, selecting columns 1 and 2
-df.loc[0:10,["Interface","Active"]]  # slice of the DataFrame selecting columns by name
 
-df.to_csv("data.csv")                 # store data as CSV
-from_csv = pd.read_csv("data.csv")    # read DataFrame from CSV
+# select 1 row / Series (returns a Series)
+df["Node"]    
+
+# select multiple rows / Series (returns a DataFrame)
+df[["Interface","Incoming_Filter_Name",]]
+
+# slice of a DataFrame, selecting columns 1 and 2
+df.iloc[0:3,[1,2]]
+
+# slice of the DataFrame selecting columns by name
+df.loc[0:10,["Interface","Active"]]  
+
+# store data as CSV
+df.to_csv("data.csv")
+
+# read DataFrame from CSV
+from_csv = pd.read_csv("data.csv")    
 ```
-
 
 
 Note about iloc and loc: with iloc, the row and the columns are selected using an integer to specify the index number of the row/column. With loc, you supply the label of the row/column name. In case the rows are labeled with integers, as is the case with Batfish models, you can select the rows using integers and the columns using their name. Generally, when working with Pybatfish, this is an easier approach.
@@ -183,7 +194,7 @@ df[unused & admin_up]
 
 ```
 
-In case a cell contains something like a string or an integer, applying a comparison operator to it is relatively straightforward. Filtering on cells that contain a composite type can be a bit trickier. I am talking about the difference in types between, for instance, the "Description" and "Interface" columns:
+In case a cell contains something like a string or an integer, applying a comparison operator to it is relatively straightforward. Filtering on cells that contain a composite type can be a bit trickier. The follow explains what I mean by this:
 
 ```python
 type(df["Description"].iloc[0])
@@ -194,8 +205,7 @@ type(df["Interface"].iloc[0])
 vars(df["Interface"].iloc[0])
 >>> {'hostname': 'as1border1', 'interface': 'Ethernet0/0'}
 ```
-
-Filtering rows for conditions applied to the hostname of interface field can be done using a Lambda:
+The "Description" column is a string. You can easily make any comparisons there. The "Interface" column is a bit different though. Filtering rows for conditions applied to the hostname of interface field can be done using a Lambda:
 
 ```python
 df[
@@ -206,7 +216,8 @@ df[
 ]
 ```
 
-We are free to add additional logic to the Lambda and add criteria to filter based on other columns as well:
+We are free to add additional logic to the Lambda and add criteria to filter based on other columns as well, so the Lambda is also a good choice in case you want to use a complex expression for filtering:
+
 ```python
 df[
     df.apply(
@@ -264,9 +275,9 @@ Pytest will then:
 
 ### Fixtures
 
-Pytest fixtures can be used to initialize resources that tests functions can use. In our case, (most) test functions will require a pybatfish session and a snapshot. Having every test function setup a pybatfish session with the Batfish service and run a snapshot would not make sense. What we do instead is write a function that returns a pybatfish Session. A session during one we already created a snapshot. 
+Pytest fixtures can be used to initialize resources that tests functions can use. In our case, (most) test functions will require a pybatfish session and a snapshot. Having every test function setup a pybatfish session with the Batfish service and run a snapshot would not make sense. Additionally, having the Batfish service return the same Pandas DataFrame over and over again for different unit tests is also wastefull. 
 
-We put the fixture in a file called `conftest.py`. This way, pytest automatically picks up the fixture. Second, we decorate the function we want to serve as fixture with the pytest fixture decorator and specify that the fixture is to be used throughout the testing session. This way, it is set up only once and we can re-use it hundreds of times:
+What we start off doing is write a function that returns a pybatfish Session during which we already created a snapshot. We put the fixture in a file called `conftest.py`. This way, pytest automatically picks up the fixture. Second, we decorate the function we want to serve as fixture with the pytest fixture decorator and specify that the fixture is to be used throughout the testing session. This way, it is set up only once and we can re-use it hundreds of times:
 
 ```python
 import pytest
@@ -302,7 +313,7 @@ def test_something(bf):
 
 Pytest collects all fixtures as soon as you run tests and you can, having created the fixture in `conftest.py`, reference it anywhere in your tests.
 
-Another thing that is nice to know is the fact that fixtures can also be used by other fixtures. Since we will be writing tests for interface properties as well as BGP sessions, we can use the previous fixtures to create new ones that return interface and BGP data. 
+Another thing that is nice to know is the fact that fixtures can also be used by other fixtures. Since we will be writing many tests for interface properties as well as BGP sessions, we can use the previous fixtures to create new ones that return interface and BGP data. 
 
 ```python
 @pytest.fixture(scope="session")
@@ -316,7 +327,7 @@ def interface_properties(bf) -> pd.DataFrame:
     return df
 ```
 
-Creating fixtures for resources that you use repeatedly not only speeds things up considerably, it also reduces the amount of clutter in your tests.
+This will make the tests run considerably faster when compared to having every tests setup a session and get the DataFrame out of the service. And creating fixtures for resources that you use repeatedly not only speeds things up considerably, they also reduces the amount of clutter in your tests.
 
 ### Examples tests
 
@@ -483,6 +494,18 @@ First up, we specified the flow using the `HeaderConstraints`. In this case, SSH
 
 Then, we run `bf.q.testFilters` and pas it the flow and reference the name of the filter against which we want to test the flow. The DataFrame returned by `bf.q.testFilters` will inform us on whether or not the flow is permitted or denied under the "Action" column. So, we test to see that none of the nodes that report a "DENY" for this flow and filter combination.
 
+Note that in addition to being able to work with stateless access-lists, Batfish also has the capabilities to working with stateful firewall rules for a variety of firewalls.
+
+
+## Things that Batfish does not do (yet)
+
+For a number of reasons, Batfish is not going to be able to capture everything. First of all, you could be using a vendor that is not supported by Batfish. But apart from that, there are going to be parts of the configuration that Batfish does not understand. Some notable examples that caught my eye:
+- MPLS
+- IPv6
+- QoS configuration constructs
+
+This is not an exhaustive list. The best way to see how well your network configurations are supported by Batfish is simply going to be by trying it out. Clone [this](https://github.com/saidvandeklundert/batfish/) repo, follow the quickstart and replace the configurations in the snapshot directory with your own.
+
 
 ## Conclusion
 
@@ -494,3 +517,5 @@ To understand more of the capabilities that Batfish has on offer, you can have a
 - [PyBatfish Jupyter notebook examples](https://github.com/batfish/pybatfish/tree/master/jupyter_notebooks)
 - [Batfish questions](https://batfish.readthedocs.io/en/latest/questions.html)
 - [Batfish documentation](https://batfish.readthedocs.io/en/latest/)
+- [Packet pusher podcast](https://packetpushers.net/podcast/heavy-networking-658-using-batfish-to-model-and-test-your-network/)
+- [How to add a Batfish parser](https://youtu.be/mJ7LVWOqshk)
